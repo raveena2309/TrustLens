@@ -1,0 +1,6 @@
+Scenario,Expected_Genuine,Observed_Verdict,Correctly_Classified
+Legitimate Certificate,True,GENUINE,True
+Wrong Verifier Private Key,False,DAMAGED ORIGINAL,True
+Wrong Issuer Public Key,False,FORGED / EDITED,True
+Wrong Session Key,False,DAMAGED ORIGINAL,True
+Random Unrelated Image,False,NOT A TRUSTLENS CERTIFICATE,True

@@ -1,0 +1,7 @@
+Method,Max_Bits,BPP,Typical_Use_Bits
+Fragile LSB (3 Channels),5529600,3.0,18000
+Edge-Adaptive LSB,5529600,3.0,18000
+BPCS Steganography,6635520,3.6,50000
+Robust DCT-QIM,120,6.510416666666667e-05,120
+Direct Sequence Spread Spectrum,64,3.472222222222222e-05,64
+Reversible Histogram Shifting,120000,0.06510416666666667,2000

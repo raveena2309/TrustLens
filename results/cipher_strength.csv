@@ -1,0 +1,4 @@
+Cipher,Linear_Complexity,Ones_Pct,Chi_Sq,Broken_by_BM
+LFSR (Degree 19),19,48.4375,0.125,True
+Geffe Generator,63,53.125,0.5,False
+Rule 30 CA,64,40.625,4.5,False

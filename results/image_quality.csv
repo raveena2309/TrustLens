@@ -1,0 +1,6 @@
+Method,PSNR_dB,SSIM,Pixels_Modified_Pct
+Plain Sequential LSB,70.65,0.9999,0.56
+Edge-Adaptive Sobel LSB,70.65,0.9999,0.559
+BPCS (Gray Code),82.48,1.0,0.037
+Robust DCT-QIM,43.61,0.9718,69.283
+Direct Sequence Spread Spectrum,46.88,0.9849,33.333
