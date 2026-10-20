@@ -1,66 +1,51 @@
-"""One-click script to generate sample genuine, tampered, and attacked certificates.
-Saves PNG and JPEG test files into samples/ for interactive demonstration in Trust Lab.
+"""generate_sample_data.py
+One-click script to generate sample genuine, tampered, and damaged certificates
+in the samples/ folder for instant testing in TrustLens.
 """
 
 import os
-from PIL import Image
-from trustlens.certificate import generate_certificate
-from trustlens.crypto.rsa_scratch import generate_keypair
-from trustlens.crypto.dh import create_dh_session
-from trustlens.pipeline import issue_certificate
-from trustlens.verify.attacks import (
-    attack_retype_field, attack_block_tamper, attack_jpeg_compress
-)
+import numpy as np
+from PIL import Image, ImageDraw
 
-SAMPLES_DIR = "samples"
-os.makedirs(SAMPLES_DIR, exist_ok=True)
+from certificate import generate_certificate
+from crypto import rsa_keygen, dh_generate_keypair, dh_shared_secret
+from stego import issue_certificate_full
+
+os.makedirs("samples", exist_ok=True)
 
 
 def main():
-    print("Generating cryptographic keys and session...")
-    issuer_pub, issuer_priv = generate_keypair(bits=1024)
-    verifier_pub, verifier_priv = generate_keypair(bits=1024)
-    _, _, session_key = create_dh_session()
+    print("Generating keys...")
+    i_pub, i_priv = rsa_keygen(bits=1024)
+    v_pub, v_priv = rsa_keygen(bits=1024)
+    a_priv, a_pub = dh_generate_keypair()
+    b_priv, b_pub = dh_generate_keypair()
+    session_key = dh_shared_secret(a_priv, b_pub)
 
-    student_details = {
-        "name": "Alex Mercer",
-        "roll": "CS-2022-8491",
+    details = {
+        "name": "Alex Mercer", "roll": "CS-2022-8491",
         "degree": "Bachelor of Technology in Computer Science",
-        "year": "2026",
-        "cgpa": "9.42",
-        "cert_id": "TL-2026-0123"
+        "year": "2026", "cgpa": "9.42", "cert_id": "TL-2026-0123"
     }
 
-    print("1. Generating genuine dual-layer certificate...")
-    genuine_cert, _, _ = issue_certificate(student_details, issuer_priv, verifier_pub, session_key)
-    genuine_path = os.path.join(SAMPLES_DIR, "genuine_certificate.png")
-    genuine_cert.save(genuine_path)
-    print(f"   Saved: {genuine_path}")
+    print("1. Generating genuine certificate...")
+    genuine = issue_certificate_full(details, i_priv, v_pub, session_key)
+    genuine.save("samples/genuine_certificate.png")
+    print("   Saved: samples/genuine_certificate.png")
 
-    print("2. Generating forged certificate (Retyped CGPA: 9.98)...")
-    forged_cgpa = attack_retype_field(genuine_cert, "cgpa", "9.98")
-    forged_cgpa_path = os.path.join(SAMPLES_DIR, "forged_cgpa_certificate.png")
-    forged_cgpa.save(forged_cgpa_path)
-    print(f"   Saved: {forged_cgpa_path}")
+    print("2. Generating forged certificate (Retyped CGPA 9.98)...")
+    forged = genuine.copy()
+    d = ImageDraw.Draw(forged)
+    d.rectangle([600, 840, 1000, 910], fill=(250, 248, 240))
+    d.text((800, 875), "Cumulative Grade Point Average (CGPA): 9.98 / 10.0", fill=(128, 20, 20), anchor="mm")
+    forged.save("samples/forged_cgpa_certificate.png")
+    print("   Saved: samples/forged_cgpa_certificate.png")
 
-    print("3. Generating forged certificate (Retyped Student Name: Dr. Victor Forger)...")
-    forged_name = attack_retype_field(genuine_cert, "name", "Dr. Victor Forger")
-    forged_name_path = os.path.join(SAMPLES_DIR, "forged_name_certificate.png")
-    forged_name.save(forged_name_path)
-    print(f"   Saved: {forged_name_path}")
+    print("3. Generating damaged original certificate (JPEG Q=75)...")
+    genuine.save("samples/damaged_jpeg_quality75.jpg", "JPEG", quality=75)
+    print("   Saved: samples/damaged_jpeg_quality75.jpg")
 
-    print("4. Generating block-tampered certificate (Altered region)...")
-    block_tampered = attack_block_tamper(genuine_cert, box=(600, 800, 950, 920))
-    block_path = os.path.join(SAMPLES_DIR, "block_tampered_certificate.png")
-    block_tampered.save(block_path)
-    print(f"   Saved: {block_path}")
-
-    print("5. Generating JPEG compressed damaged certificate (Quality 75)...")
-    jpeg_path = os.path.join(SAMPLES_DIR, "damaged_jpeg_quality75.jpg")
-    genuine_cert.save(jpeg_path, format="JPEG", quality=75)
-    print(f"   Saved: {jpeg_path}")
-
-    print("\n[OK] All sample certificates successfully generated in samples/ directory!")
+    print("\n[OK] Sample certificates ready in samples/ directory!")
 
 
 if __name__ == "__main__":

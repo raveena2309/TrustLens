@@ -1,144 +1,73 @@
-# 🛡️ TrustLens+: Dual-Layer Certificate Protection, Forensic Verification & Differential Privacy
+# 🛡️ TrustLens: Dual-Layer Certificate Protection & Differential Privacy
 
-**TrustLens+** is an end-to-end academic credential protection and verification ecosystem paired with an interactive **Trust Lab** demonstration platform. It solves certificate forgery and privacy leakage by embedding digitally signed, encrypted records inside certificate images across two complementary steganographic layers (fragile and robust), and enables privacy-preserving collaborative statistics using Differential Privacy and Secure Multi-Party Computation.
+A simplified, streamlined implementation of academic certificate protection, forensic tamper detection, and differential privacy covering **Modules 1, 4, and 5** of the syllabus.
 
 ---
 
-## 🏛️ Syllabus Mapping
+## 💡 What it Does (In Simple Words)
 
-| Module | Topic | Implementation in TrustLens+ |
+1. **Issue**: A college generates a certificate. Behind the pixels, it hides an **RSA-signed, Geffe-encrypted copy** of the student record inside the image.
+2. **Verify**: Anyone uploads the certificate to the app. The system extracts the hidden record, checks the digital signature, and compares all 1,800 image blocks ($32 \times 32$ pixels each).
+   - If genuine: Shows **✅ GENUINE**.
+   - If edited (e.g. CGPA changed): Highlights the exact tampered area in **🚨 RED**.
+   - If compressed or resized: The robust DCT layer still recovers the **Certificate ID** (**⚠️ DAMAGED ORIGINAL**).
+3. **Privacy**: Publishes college statistics with **Differential Privacy (Laplace Mechanism)** so individual student records can never be leaked.
+
+---
+
+## 📁 Simple Code Structure (Only 5 Core Files!)
+
+| File | Purpose | Syllabus Module |
 | :--- | :--- | :--- |
-| **Module 1** | **Differential Privacy (DP)**: Laplace Mechanism, Exponential Mechanism, Randomized Response, Basic & Advanced Composition | `trustlens/privacy/laplace.py`, `exponential.py`, `randomized_response.py`, `budget.py` |
-| **Module 1** | **Multi-Party Computation (SMC)** & Distributed Differential Privacy | `trustlens/privacy/multiparty.py` (Additive Secret Sharing + Gamma Infinite Divisibility) |
-| **Module 4** | **Classical Ciphers**: Caesar, Beaufort, Columnar Transposition, Monoalphabetic, Homophonic, Polyphonic, Cardan Grille | `trustlens/crypto/classical.py`, `trustlens/crypto/classical_more.py` |
-| **Module 4** | **Permutation & Cyclic Notation**: Disjoint cycles (`to_cycles`, `from_cycles`) | `trustlens/crypto/classical_more.py` |
-| **Module 4** | **Stream Ciphers**: LFSR, Geffe Nonlinear Generator, Rule 30 Cellular Automata | `trustlens/crypto/lfsr.py`, `trustlens/crypto/cellular.py` |
-| **Module 4** | **Cryptanalysis**: Berlekamp-Massey Algorithm, Chi-Square Frequency Analysis, Hill-Climbing Bigram Breaker | `trustlens/crypto/lfsr.py`, `classical.py`, `classical_more.py` |
-| **Module 4** | **Asymmetric Cryptography**: Diffie-Hellman-Merkle Key Exchange, RSA from Scratch (Miller-Rabin, PKCS#1 v1.5) | `trustlens/crypto/dh.py`, `trustlens/crypto/rsa_scratch.py` |
-| **Module 5** | **Fragile Steganography**: LSB Embedding, Key-Seeded Permutation, Edge-Adaptive (Sobel 7-bit) | `trustlens/stego/lsb.py` |
-| **Module 5** | **High-Capacity Steganography**: BPCS (Canonical Gray Code, border complexity $\alpha$, checkerboard conjugation) | `trustlens/stego/bpcs.py` |
-| **Module 5** | **Robust Watermarking**: Quantization Index Modulation (QIM) in 8×8 DCT domain surviving JPEG compression | `trustlens/stego/dct_qim.py` |
-| **Module 5** | **Spread Spectrum Steganography**: Direct Sequence Spread Spectrum (DSSS) with PN codes | `trustlens/stego/spread.py` |
-| **Module 5** | **Lossless Data Hiding**: Reversible Histogram Shifting (Ni et al.) with exact bit-for-bit image restoration | `trustlens/stego/reversible.py` |
-| **Module 5** | **Public-Key Steganography**: RSA-wrapped stego seeds for verifier-only extraction | `trustlens/stego/pubkey_stego.py` |
+| **[`certificate.py`](file:///d:/Projects/TrustLens/certificate.py)** | Generates certificate image ($1600 \times 1152$) with collegiate seal and defines field layout | Image Processing |
+| **[`crypto.py`](file:///d:/Projects/TrustLens/crypto.py)** | **RSA from Scratch** (Miller-Rabin, signing, key wrapping), **Diffie-Hellman**, **LFSR & Geffe**, **SHA-256**, **Berlekamp-Massey** | **Module 4** |
+| **[`stego.py`](file:///d:/Projects/TrustLens/stego.py)** | **Fragile LSB Layer** ($32 \times 32$ block tamper detection, 7x majority voting) & **Robust DCT Layer** (QIM watermark surviving JPEG) | **Module 5** |
+| **[`privacy.py`](file:///d:/Projects/TrustLens/privacy.py)** | **Laplace Mechanism** (inverse CDF), **Exponential Mechanism**, and **Privacy Budget Manager** | **Module 1** |
+| **[`app.py`](file:///d:/Projects/TrustLens/app.py)** | Streamlit interactive web dashboard (Issue, Verify, and Interactive Demos) | UI / Demo |
 
 ---
 
-## 🏗️ Architecture
+## 🚀 How to Run
 
-### 1. Issuance Workflow (`issue_certificate`)
-```
-Details (Name, Roll, Degree, Year, CGPA)
-   │
-   ├─► Render Certificate Base Image (1600x1152)
-   │
-   ├─► [Robust Layer]: Embed Certificate ID via DCT-QIM (Mid-frequency (3,2), Q=20, 250x repetition)
-   │
-   ├─► Sign Record (SHA-256 Digest + RSA-1024 Private Key)
-   │
-   ├─► Encrypt (Record + Signature + Nonce) via Geffe Stream Cipher (DH Session Key)
-   │
-   ├─► Frame with Magic 'TL', Version, Length, and CRC-32 (Repeated 7x for Bitwise Majority Voting)
-   │
-   ├─► Wrap Ephemeral Stego Seed using Verifier's RSA Public Key (EME-PKCS1-v1_5)
-   │
-   ├─► [Fragile Layer]: Embed Edge-Adaptive LSB (Sobel on upper 7 bit-planes) + 32x32 Block Checksums
-   │
-   └─► Output: certificate.png
-```
-
-### 2. Forensic Verification Workflow (`verify_certificate`)
-```
-Input Certificate Image
-   │
-   ├─► Extract & Majority-Vote Robust DCT Watermark ──► Certificate ID
-   │
-   ├─► Extract RSA-Wrapped Seed from Row 1 Header ──► Unwrap with Verifier Private Key
-   │
-   ├─► Extract Fragile LSB Payload ──► Bitwise Majority Vote (7 copies) ──► Check CRC-32
-   │
-   ├─► Geffe Decrypt ──► Verify RSA Signature against Issuer Public Key
-   │
-   ├─► Recompute 32x32 Block Checksums (Upper 7 bit-planes) ──► 2D Tamper Heatmap & Terrain
-   │
-   ├─► Optical Character Recognition (OCR) on Printed Fields ──► Fuzzy/Exact Comparison
-   │
-   └─► Decision Engine ──► Categorical Verdict:
-         - GENUINE
-         - FORGED / EDITED (Show altered fields & red tamper heatmap)
-         - DAMAGED ORIGINAL (Fragile layer destroyed by recompression, DCT ID recovered)
-         - NOT A TRUSTLENS CERTIFICATE
-```
-
----
-
-## 🚀 Quickstart Guide
-
-### 1. Installation
-Clone or navigate to the project directory:
-```bash
-cd TrustLens
+### 1. Install Dependencies
+```powershell
 pip install -r requirements.txt
 ```
 
-> **Note on Tesseract OCR**:
-> On Windows, install [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) to `C:\Program Files\Tesseract-OCR\tesseract.exe`.
-> TrustLens+ automatically detects this path. If Tesseract is not installed, the verification pipeline uses an automated heuristic template reader as a transparent fallback.
-
-### 2. Launch Streamlit "Trust Lab" Web Application
-```bash
+### 2. Launch the Web Application
+```powershell
 streamlit run app.py
 ```
-The application will launch in your browser at `http://localhost:8501`.
+Open your browser at `http://localhost:8501`.
 
-### 3. Generate Pre-Packaged Sample Certificates
-Generate genuine, CGPA-forged, name-forged, block-tampered, and JPEG-damaged test certificates in one click:
-```bash
+### 3. Run All Unit Tests
+```powershell
+python tests.py
+```
+
+### 4. Generate Pre-Packaged Test Certificates
+```powershell
 python generate_sample_data.py
 ```
-Files will be saved in the `samples/` directory.
-
-### 4. Run Unit Test Suite
-Execute the full 35-test unit testing suite:
-```bash
-python -m unittest discover tests
-```
-
-### 5. Run Automated Evaluation & Generate Benchmarks
-Execute all 11 scientific benchmark experiments and generate CSV tables and plots:
-```bash
-python evaluate.py
-```
-Outputs are written to `results/`:
-- `image_quality.csv` & `plot_image_quality.png`
-- `redundancy.csv` & `plot_redundancy.png`
-- `privacy_laplace.csv` & `plot_privacy_error.png`
-- `compression.csv`, `capacity.csv`, `rejection.csv`, `cipher_strength.csv`
+Creates `genuine_certificate.png`, `forged_cgpa_certificate.png`, and `damaged_jpeg_quality75.jpg` in the `samples/` directory for instant testing in the UI.
 
 ---
 
-## 🎯 Viva Q&A Reference
+## 🎯 Viva Q&A (Study Guide for Exams)
 
-### Q1: Why are two steganographic layers used instead of one?
-**Answer**:
-A single layer cannot satisfy both fragility and robustness:
-1. **Fragile LSB Layer**: Highly sensitive to pixel modifications. Changing even a single digit (like CGPA from 9.42 to 9.98) alters the upper 7 bit-planes and invalidates the 32×32 block checksum, precisely localizing the tampering.
-2. **Robust DCT Layer**: QIM in mid-frequency DCT coefficients survives JPEG lossy compression, resizing, and physical degradation. If a certificate is photocopied or compressed as a JPEG, the fragile layer is destroyed, but the DCT layer still recovers the authentic Certificate ID (`TL-2026-0123`), correctly classifying it as a **Damaged Original** rather than an outright forgery.
+### Q1: Why do we use TWO steganographic layers?
+- **Fragile LSB Layer**: Highly sensitive to tampering. If an attacker modifies even one digit (like CGPA from 9.42 to 9.98), that $32 \times 32$ block checksum fails and turns red on the tamper heatmap.
+- **Robust DCT Layer**: Embedded into frequency coefficients. Survives lossy JPEG compression and resizing. Even if someone takes a photo or compresses the certificate, the Certificate ID is still recovered, proving it was originally genuine.
 
-### Q2: Why is a single LFSR cryptographically insecure, and how does the Geffe generator fix it?
-**Answer**:
-A single LFSR with degree $L$ has a linear feedback relation. By the **Berlekamp-Massey algorithm**, an adversary observing just $2L$ consecutive output bits can reconstruct the minimal connection polynomial in $\mathcal{O}(L^2)$ operations, breaking the cipher completely.
-The **Geffe generator** solves this by combining three coprime-length LFSRs using a non-linear selector function:
-$$f(x_1, x_2, x_3) = (x_1 \land x_2) \oplus (\neg x_1 \land x_3)$$
-This non-linear combination dramatically elevates the linear complexity $L_{\text{eff}} \approx L_1 L_2 + (1 + L_1) L_3$, making Berlekamp-Massey infeasible from a small sequence of keystream bits.
+### Q2: Why is a single LFSR insecure, and how does the Geffe generator fix it?
+- A single LFSR has a linear relationship. An attacker who sees just $2L$ bits can use the **Berlekamp-Massey algorithm** to completely crack the cipher.
+- The **Geffe generator** combines 3 separate LFSRs non-linearly: $F(x_1, x_2, x_3) = (x_1 \land x_2) \oplus (\neg x_1 \land x_3)$. This destroys the linearity and defeats the Berlekamp-Massey attack.
 
-### Q3: How does edge-adaptive LSB embedding work without desynchronizing the extractor?
-**Answer**:
-Edge detection (Sobel filter) is computed **strictly on the upper 7 bit-planes** (`image >> 1`). Because LSB embedding modifies only the least significant bit (plane 0), the upper 7 bit-planes remain 100% untouched. Therefore, the extractor computes the exact same edge magnitude map and visits the identical pixel positions in the same priority order.
+### Q3: What is the 7x redundancy and majority voting?
+- The signed payload is repeated 7 times inside the pixels.
+- On extraction, the decoder looks at each bit position across the 7 copies and takes a **majority vote** (if $\ge 4$ copies say 1, the bit is 1).
+- This allows the hidden student record to be recovered perfectly even if local parts of the image are edited or damaged!
 
-### Q4: How does Distributed Laplace noise work in Multi-Party Computation?
-**Answer**:
-By the infinite divisibility property of the Laplace distribution, a Laplace random variable $\text{Laplace}(0, b)$ can be expressed as the difference of two Gamma variables: $\text{Gamma}(1, b) - \text{Gamma}(1, b)$.
-Because the sum of $n$ independent $\text{Gamma}(1/n, b)$ distributions equals $\text{Gamma}(1, b)$, each of the $n$ colleges locally samples:
-$$z_i = \text{Gamma}(1/n, b) - \text{Gamma}(1/n, b)$$
-When the $n$ colleges sum their secret shares and local noise terms, the total added noise is mathematically identical to a single calibrated $\text{Laplace}(0, b)$ noise term, with zero private count leakage.
+### Q4: How does the Laplace mechanism protect privacy?
+- To prevent an attacker from guessing if a specific student is in a small department, we add random noise drawn from the Laplace distribution: $\text{Noisy Count} = \text{True Count} + \text{Laplace}(0, 1/\varepsilon)$.
+- Smaller $\varepsilon$ (epsilon) means more privacy (more noise); larger $\varepsilon$ means more accuracy (less noise).
