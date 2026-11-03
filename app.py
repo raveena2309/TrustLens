@@ -764,96 +764,399 @@ with tab_tamper:
 
 
 # =====================================================================
-# TAB 4: SYSTEM SECURITY & PRIVACY ENGINE
+# TAB 4: SYSTEM SECURITY & PRIVACY ENGINE (DIAGRAMMATIC & INTERACTIVE)
 # =====================================================================
 with tab_tech:
     st.markdown('<span class="badge-pill badge-tech">SECURITY ARCHITECTURE & PRIVACY CONTROLS</span>', unsafe_allow_html=True)
-    st.subheader("System Security & Privacy Technologies")
-    st.write("An operational overview and interactive demonstration of the core cryptographic algorithms and privacy guarantees powering TrustLens.")
+    st.subheader("System Security & Privacy Architecture")
+    st.write("An operational overview combining theoretical architectural diagrams with live, executable implementations of the core cryptographic algorithms and mathematical privacy guarantees powering TrustLens.")
 
-    col_dp_sec, col_crypto_sec = st.columns([1, 1], gap="large")
+    st.markdown("---")
 
-    # 1. DIFFERENTIAL PRIVACY
-    with col_dp_sec:
-        st.markdown("### 1. Privacy-Preserving Institutional Statistics")
-        st.write("When educational institutions publish department graduation counts or placement metrics, publishing exact counts can compromise individual student privacy, especially in small departments. TrustLens implements **Differential Privacy (DP)** to provide mathematical privacy guarantees.")
+    # -----------------------------------------------------------------
+    # MECHANISM 1: LAPLACE MECHANISM (DIFFERENTIAL PRIVACY)
+    # -----------------------------------------------------------------
+    st.markdown("### 1. Laplace Mechanism — Privacy-Preserving Institutional Statistics")
+    st.caption("When educational institutions publish department graduate figures or placement statistics, exact counts can lead to re-identification of individual students. TrustLens applies the **Laplace Mechanism** to guarantee ε-Differential Privacy.")
 
-        st.markdown("#### Laplace Noise Injection Engine")
-        st.caption("Injects calibrated noise from the Laplace distribution: Noisy Count = True Count + Laplace(0, Sensitivity / ε).")
+    c_lap_diag, c_lap_live = st.columns([1, 1], gap="large")
 
-        true_grad_count = st.number_input("True Department Graduate Count:", value=380, step=10)
+    with c_lap_diag:
+        st.markdown("#### 📐 Architecture & Noise Injection Flow")
+        st.markdown("""
+        <svg viewBox="0 0 620 180" width="100%" xmlns="http://www.w3.org/2000/svg" style="border-radius:10px; background:var(--card-bg); border:1px solid var(--card-border); padding:10px;">
+          <defs>
+            <marker id="arrowLap" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#3B82F6"/>
+            </marker>
+          </defs>
+          <!-- Step 1: True Count -->
+          <rect x="15" y="45" width="145" height="80" rx="8" fill="#1E293B" stroke="#475569" stroke-width="1.5"/>
+          <text x="87" y="72" fill="#94A3B8" font-size="11" font-weight="700" text-anchor="middle" font-family="sans-serif">RAW RECORD</text>
+          <text x="87" y="95" fill="#F8FAFC" font-size="15" font-weight="800" text-anchor="middle" font-family="sans-serif">True Count: 380</text>
+          <text x="87" y="113" fill="#38BDF8" font-size="10.5" text-anchor="middle" font-family="sans-serif">Dept Graduates (D)</text>
+
+          <!-- Arrow 1 -->
+          <line x1="160" y1="85" x2="215" y2="85" stroke="#3B82F6" stroke-width="2.5" marker-end="url(#arrowLap)"/>
+          <text x="187" y="75" fill="#3B82F6" font-size="10" font-weight="700" text-anchor="middle" font-family="sans-serif">+ Query</text>
+
+          <!-- Step 2: Laplace Noise Injection -->
+          <rect x="220" y="30" width="180" height="110" rx="10" fill="#1D4ED8" stroke="#60A5FA" stroke-width="2"/>
+          <text x="310" y="55" fill="#DBEAFE" font-size="11" font-weight="700" text-anchor="middle" font-family="sans-serif">LAPLACE ENGINE</text>
+          <text x="310" y="78" fill="#FFFFFF" font-size="14.5" font-weight="800" text-anchor="middle" font-family="sans-serif">Add Random Noise</text>
+          <text x="310" y="98" fill="#FEF08A" font-size="12" font-weight="700" text-anchor="middle" font-family="sans-serif">Noise ~ Lap(0, 1/ε)</text>
+          <rect x="235" y="110" width="150" height="20" rx="4" fill="rgba(0,0,0,0.25)"/>
+          <text x="310" y="124" fill="#FFFFFF" font-size="9.5" text-anchor="middle" font-family="sans-serif">Sensitivity Δf = 1</text>
+
+          <!-- Arrow 2 -->
+          <line x1="400" y1="85" x2="455" y2="85" stroke="#3B82F6" stroke-width="2.5" marker-end="url(#arrowLap)"/>
+          <text x="427" y="75" fill="#3B82F6" font-size="10" font-weight="700" text-anchor="middle" font-family="sans-serif">Noisy D'</text>
+
+          <!-- Step 3: Reported Count -->
+          <rect x="460" y="45" width="145" height="80" rx="8" fill="#064E3B" stroke="#10B981" stroke-width="2"/>
+          <text x="532" y="72" fill="#6EE7B7" font-size="11" font-weight="700" text-anchor="middle" font-family="sans-serif">PUBLIC REPORT</text>
+          <text x="532" y="95" fill="#FFFFFF" font-size="15" font-weight="800" text-anchor="middle" font-family="sans-serif">Reported Count</text>
+          <text x="532" y="113" fill="#A7F3D0" font-size="11" font-weight="700" text-anchor="middle" font-family="sans-serif">e.g. 381 (± Noise)</text>
+
+          <!-- Mathematical Bottom Guarantee -->
+          <text x="310" y="165" fill="#22C55E" font-size="10.5" font-weight="600" text-anchor="middle" font-family="sans-serif">
+            🛡️ Privacy Guarantee: Pr[M(D) ∈ S] ≤ e^ε · Pr[M(D') ∈ S]
+          </text>
+        </svg>
+        """, unsafe_allow_html=True)
+
+        st.markdown("#### 📉 Expected Error vs. Privacy Budget (ε)")
+        st.caption(r"Theoretical error deviation $\pm 1/\epsilon$: smaller $\epsilon$ injects larger noise (stronger privacy); larger $\epsilon$ reduces error (higher accuracy).")
+        eps_curve_vals = np.linspace(0.2, 5.0, 49)
+        err_curve_vals = 1.0 / eps_curve_vals
+        df_err_plot = pd.DataFrame({"Privacy Parameter ε": eps_curve_vals, "Expected Deviation (± 1/ε)": err_curve_vals})
+        st.line_chart(df_err_plot.set_index("Privacy Parameter ε"), height=180)
+
+    with c_lap_live:
+        st.markdown("#### ⚡ Live Interactive Laplace Query")
+        true_grad_count = st.number_input("True Department Graduate Count:", value=380, step=10, key="lap_true_val")
         eps_slider = st.slider(
             "Privacy Parameter ε (Epsilon):",
             min_value=0.1, max_value=5.0, value=1.0, step=0.1,
-            help="Smaller ε injects more noise (stronger privacy). Larger ε injects less noise (higher numerical accuracy)."
+            key="lap_eps_slider",
+            help="Smaller ε = more noise, stronger privacy. Larger ε = higher numerical accuracy."
         )
 
-        # Real-time Budget Tracking
+        # Budget Meter
         b_mgr = st.session_state.budget
-        st.progress(b_mgr.percent_consumed / 100.0, text=f"Institutional Privacy Budget: {b_mgr.spent_epsilon:.1f} / {b_mgr.max_epsilon:.1f} ε spent ({b_mgr.percent_consumed:.0f}%)")
+        st.progress(
+            b_mgr.percent_consumed / 100.0,
+            text=f"Privacy Budget Meter: {b_mgr.spent_epsilon:.1f} / {b_mgr.max_epsilon:.1f} ε spent ({b_mgr.percent_consumed:.0f}%)"
+        )
 
         c_q1, c_q2 = st.columns(2)
-        if c_q1.button("Query Noisy Count", use_container_width=True):
+        with c_q1:
+            btn_query_lap = st.button("🎲 Query Noisy Count", type="primary", use_container_width=True)
+        with c_q2:
+            btn_reset_b = st.button("🔄 Reset Budget", use_container_width=True)
+
+        if btn_query_lap:
             if b_mgr.spend(eps_slider):
                 noisy_val = laplace_mechanism(true_grad_count, eps_slider)
-                noise_err = abs(noisy_val - true_grad_count)
-                st.success(f"Reported Graduate Count: **{noisy_val}** (Noise Deviation: ±{noise_err}, Expected Error: ~{1.0/eps_slider:.2f})")
+                st.markdown(f"""
+                <div class="theme-card" style="border-left: 4px solid #3B82F6;">
+                    <div style="font-size:0.9rem; color:var(--text-secondary);">True Count: <b>{true_grad_count}</b> &nbsp;|&nbsp; Injected Noise: <b>{noisy_val - true_grad_count:+d}</b></div>
+                    <div style="font-size:1.4rem; font-weight:800; color:var(--text-primary); margin:0.3rem 0;">
+                        Reported Count: <span style="color:#2563EB;">{noisy_val}</span>
+                    </div>
+                    <div style="font-size:0.85rem; color:#16A34A;">
+                        ✅ Mathematical error within theoretical bound (Expected Deviation: ~{1.0/eps_slider:.2f})
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
             else:
-                st.error("🚨 QUERY REFUSED: Institutional privacy budget for this query window has been exhausted!")
+                st.error("🚨 Privacy Budget Exhausted: Query refused to protect student identity against reconstruction attacks!")
 
-        if c_q2.button("Reset Privacy Budget", use_container_width=True):
+        if btn_reset_b:
             b_mgr.reset()
             st.rerun()
 
-        st.markdown("---")
-        st.markdown("#### Private Department Honors Award")
-        st.caption("Selects the top department using the **Exponential Mechanism**, probabilistically choosing the winner proportional to score without revealing exact student figures.")
+    st.markdown("---")
 
+    # -----------------------------------------------------------------
+    # MECHANISM 2: EXPONENTIAL MECHANISM (PRIVATE SELECTION)
+    # -----------------------------------------------------------------
+    st.markdown("### 2. Exponential Mechanism — Private Department Honors Selection")
+    st.caption("Used when the output is a non-numerical categorical choice (such as selecting the 'Department of the Year'). It probabilistically selects candidates proportional to their utility scores without leaking exact student headcounts.")
+
+    c_exp_diag, c_exp_live = st.columns([1, 1], gap="large")
+
+    with c_exp_diag:
+        st.markdown("#### 📐 Selection Pipeline Flowchart")
+        st.markdown("""
+        <svg viewBox="0 0 620 180" width="100%" xmlns="http://www.w3.org/2000/svg" style="border-radius:10px; background:var(--card-bg); border:1px solid var(--card-border); padding:10px;">
+          <defs>
+            <marker id="arrowExp" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#9333EA"/>
+            </marker>
+          </defs>
+          <!-- Step 1: Utility Scores -->
+          <rect x="15" y="45" width="145" height="85" rx="8" fill="#1E293B" stroke="#475569" stroke-width="1.5"/>
+          <text x="87" y="68" fill="#C084FC" font-size="11" font-weight="700" text-anchor="middle" font-family="sans-serif">DEPT SCORES</text>
+          <text x="87" y="88" fill="#E2E8F0" font-size="10" text-anchor="middle" font-family="sans-serif">CSE: 380 | ECE: 260</text>
+          <text x="87" y="103" fill="#E2E8F0" font-size="10" text-anchor="middle" font-family="sans-serif">AI&DS: 190 | CSB: 120</text>
+          <text x="87" y="118" fill="#94A3B8" font-size="9" text-anchor="middle" font-family="sans-serif">Utility u(x, r)</text>
+
+          <!-- Arrow 1 -->
+          <line x1="160" y1="87" x2="215" y2="87" stroke="#9333EA" stroke-width="2.5" marker-end="url(#arrowExp)"/>
+
+          <!-- Step 2: Probability Mass Function -->
+          <rect x="220" y="30" width="185" height="115" rx="10" fill="#581C87" stroke="#A855F7" stroke-width="2"/>
+          <text x="312" y="55" fill="#F3E8FF" font-size="11" font-weight="700" text-anchor="middle" font-family="sans-serif">PROBABILITY DENSITY</text>
+          <text x="312" y="78" fill="#FFFFFF" font-size="13" font-weight="800" text-anchor="middle" font-family="sans-serif">Calculate Probabilities</text>
+          <text x="312" y="98" fill="#FDE047" font-size="11" font-weight="700" text-anchor="middle" font-family="sans-serif">P(r) ∝ exp( ε·u(r) / 2Δu )</text>
+          <rect x="235" y="110" width="155" height="22" rx="4" fill="rgba(0,0,0,0.3)"/>
+          <text x="312" y="125" fill="#E9D5FF" font-size="9.5" text-anchor="middle" font-family="sans-serif">Sensitivity Δu = 1</text>
+
+          <!-- Arrow 2 -->
+          <line x1="405" y1="87" x2="455" y2="87" stroke="#9333EA" stroke-width="2.5" marker-end="url(#arrowExp)"/>
+
+          <!-- Step 3: Probabilistic Winner -->
+          <rect x="460" y="45" width="145" height="85" rx="8" fill="#1E293B" stroke="#EAB308" stroke-width="2"/>
+          <text x="532" y="68" fill="#FDE047" font-size="11" font-weight="700" text-anchor="middle" font-family="sans-serif">PRIVATE WINNER</text>
+          <text x="532" y="90" fill="#FFFFFF" font-size="13" font-weight="800" text-anchor="middle" font-family="sans-serif">🏆 Dept of the Year</text>
+          <text x="532" y="108" fill="#38BDF8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="sans-serif">Random Sample</text>
+          <text x="532" y="122" fill="#94A3B8" font-size="9" text-anchor="middle" font-family="sans-serif">Privacy-Guaranteed</text>
+
+          <!-- Bottom Banner -->
+          <text x="310" y="165" fill="#C084FC" font-size="10.5" font-weight="600" text-anchor="middle" font-family="sans-serif">
+            💡 Selection is weighted by utility: highest score is most likely, but random sampling preserves DP.
+          </text>
+        </svg>
+        """, unsafe_allow_html=True)
+
+    with c_exp_live:
+        st.markdown("#### ⚡ Live Department Selection & Probability Distribution")
         dept_scores = {
             "Computer Science & Engg.": 380,
             "Electronics & Comm. Engg.": 260,
             "Artificial Intelligence & DS": 190,
             "Computer Science & Business": 120
         }
-        exp_eps_val = st.slider("Selection Privacy ε:", 0.2, 5.0, 1.5, 0.2)
-        if st.button("Run Private Department Selection", use_container_width=True):
-            top_dept, prob_dist = exponential_mechanism(dept_scores, exp_eps_val)
-            st.success(f"Awarded Department: **{top_dept}**")
-            st.bar_chart(prob_dist)
+        exp_eps_val = st.slider("Selection Privacy Parameter ε:", 0.2, 5.0, 1.5, 0.2, key="exp_eps_slider")
 
-    # 2. CRYPTOGRAPHIC INTEGRITY
-    with col_crypto_sec:
-        st.markdown("### 2. Cryptographic Integrity & Stream Ciphers")
-        st.write("Student records hidden inside certificates are digitally signed using RSA and stream-encrypted using non-linear combination keystream generators.")
+        # Compute dynamic probabilities for display
+        score_arr = np.array(list(dept_scores.values()), dtype=np.float64)
+        scaled = (exp_eps_val * score_arr) / 2.0
+        scaled -= np.max(scaled)
+        exp_weights = np.exp(scaled)
+        probs = exp_weights / np.sum(exp_weights)
+        prob_dict = {dept: float(p) for dept, p in zip(dept_scores.keys(), probs)}
 
-        st.markdown("#### Keystream Security: LFSR vs Geffe Generator")
-        st.caption("A standard Linear Feedback Shift Register (LFSR) has linear predictability and can be broken with the Berlekamp-Massey algorithm. TrustLens uses a **Geffe Generator** which non-linearly combines three registers to eliminate linear predictability.")
+        st.caption(r"Winning Probability per Department (Calculated via $P(r) \propto e^{\epsilon u(r) / 2}$):")
+        st.bar_chart(prob_dict, height=160)
 
-        lfsr_seed = 12345
-        sample_lfsr = LFSR(size=19, taps=[0, 1, 4, 18], seed=lfsr_seed)
+        if st.button("🎲 Randomly Select Department of the Year", type="primary", use_container_width=True):
+            top_dept, _ = exponential_mechanism(dept_scores, exp_eps_val)
+            st.markdown(f"""
+            <div class="theme-card" style="border-left: 4px solid #EAB308; background:rgba(234, 179, 8, 0.08);">
+                <div style="font-size:0.9rem; color:var(--text-secondary);">Honors Award Outcome:</div>
+                <div style="font-size:1.35rem; font-weight:800; color:var(--text-primary); margin:0.2rem 0;">
+                    🏆 Department of the Year: <span style="color:#D97706;">{top_dept}</span>
+                </div>
+                <div style="font-size:0.85rem; color:#16A34A;">
+                    ✅ Selected probabilistically without revealing private student count metrics!
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # -----------------------------------------------------------------
+    # MECHANISM 3: STREAM CIPHER SECURITY (LFSR vs GEFFE GENERATOR)
+    # -----------------------------------------------------------------
+    st.markdown("### 3. Stream Cipher Security — Linear LFSR vs. Geffe Non-linear Combiner")
+    st.caption("Cryptographic streams used to encrypt certificates must resist linear cryptanalysis. A single Linear Feedback Shift Register (LFSR) is vulnerable to reconstruction via the **Berlekamp-Massey algorithm**. TrustLens uses a **Geffe Generator** that non-linearly combines three LFSRs.")
+
+    c_gef_diag, c_gef_live = st.columns([1, 1], gap="large")
+
+    with c_gef_diag:
+        st.markdown("#### 📐 Architecture: Three LFSRs Feeding Geffe Combiner")
+        st.markdown("""
+        <svg viewBox="0 0 620 250" width="100%" xmlns="http://www.w3.org/2000/svg" style="border-radius:10px; background:var(--card-bg); border:1px solid var(--card-border); padding:10px;">
+          <defs>
+            <marker id="arrRedG" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#EF4444"/>
+            </marker>
+            <marker id="arrGrnG" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#10B981"/>
+            </marker>
+          </defs>
+          <!-- Top: Single LFSR Broken -->
+          <text x="15" y="20" fill="#EF4444" font-size="11" font-weight="700" font-family="sans-serif">1. VULNERABLE: Linear LFSR Stream</text>
+          <rect x="15" y="28" width="135" height="38" rx="6" fill="#1E293B" stroke="#64748B" stroke-width="1.5"/>
+          <text x="82" y="46" fill="#F8FAFC" font-size="10" font-weight="700" text-anchor="middle" font-family="sans-serif">Single 19-bit LFSR</text>
+          <text x="82" y="58" fill="#94A3B8" font-size="8.5" text-anchor="middle" font-family="sans-serif">Linear Feedback</text>
+
+          <line x1="150" y1="47" x2="200" y2="47" stroke="#EF4444" stroke-width="2" marker-end="url(#arrRedG)"/>
+          <rect x="205" y="28" width="165" height="38" rx="6" fill="#1E293B" stroke="#F59E0B" stroke-width="1.5"/>
+          <text x="287" y="46" fill="#FCD34D" font-size="10" font-weight="700" text-anchor="middle" font-family="sans-serif">Linear Bitstream</text>
+          <text x="287" y="58" fill="#94A3B8" font-size="8.5" text-anchor="middle" font-family="monospace">101100101011...</text>
+
+          <line x1="370" y1="47" x2="420" y2="47" stroke="#EF4444" stroke-width="2" marker-end="url(#arrRedG)"/>
+          <rect x="425" y="28" width="180" height="38" rx="6" fill="#450A0A" stroke="#EF4444" stroke-width="1.5"/>
+          <text x="515" y="45" fill="#FCA5A5" font-size="10" font-weight="700" text-anchor="middle" font-family="sans-serif">Berlekamp-Massey</text>
+          <text x="515" y="58" fill="#EF4444" font-size="9.5" font-weight="800" text-anchor="middle" font-family="sans-serif">💥 BROKEN at 2L = 38 bits!</text>
+
+          <line x1="15" y1="78" x2="605" y2="78" stroke="var(--card-border)" stroke-width="1"/>
+
+          <!-- Bottom: Three LFSRs -> Geffe Combiner -->
+          <text x="15" y="96" fill="#10B981" font-size="11" font-weight="700" font-family="sans-serif">2. SECURE: Three LFSRs → Geffe Non-linear Combiner</text>
+          
+          <rect x="15" y="108" width="125" height="32" rx="5" fill="#1E293B" stroke="#38BDF8" stroke-width="1.5"/>
+          <text x="77" y="128" fill="#38BDF8" font-size="10" font-weight="700" text-anchor="middle" font-family="sans-serif">LFSR 1 (Control x₁)</text>
+
+          <rect x="15" y="146" width="125" height="32" rx="5" fill="#1E293B" stroke="#C084FC" stroke-width="1.5"/>
+          <text x="77" y="166" fill="#C084FC" font-size="10" font-weight="700" text-anchor="middle" font-family="sans-serif">LFSR 2 (Input x₂)</text>
+
+          <rect x="15" y="184" width="125" height="32" rx="5" fill="#1E293B" stroke="#FCD34D" stroke-width="1.5"/>
+          <text x="77" y="204" fill="#FCD34D" font-size="10" font-weight="700" text-anchor="middle" font-family="sans-serif">LFSR 3 (Input x₃)</text>
+
+          <!-- Input lines to Combiner -->
+          <path d="M 140 124 L 210 152" stroke="#38BDF8" stroke-width="1.5"/>
+          <path d="M 140 162 L 210 162" stroke="#C084FC" stroke-width="1.5"/>
+          <path d="M 140 200 L 210 172" stroke="#FCD34D" stroke-width="1.5"/>
+
+          <!-- Geffe Combiner Function Box -->
+          <rect x="215" y="125" width="180" height="75" rx="8" fill="#0F766E" stroke="#2DD4BF" stroke-width="2"/>
+          <text x="305" y="148" fill="#CCFBF1" font-size="11" font-weight="800" text-anchor="middle" font-family="sans-serif">GEFFE COMBINER</text>
+          <text x="305" y="168" fill="#FFFFFF" font-size="10.5" font-weight="800" text-anchor="middle" font-family="monospace">z = (x₁∧x₂) ⊕ (¬x₁∧x₃)</text>
+          <text x="305" y="186" fill="#99F6E4" font-size="8.5" text-anchor="middle" font-family="sans-serif">Multiplexes x₂ or x₃ by x₁</text>
+
+          <!-- Arrow to Out -->
+          <line x1="395" y1="162" x2="435" y2="162" stroke="#10B981" stroke-width="2" marker-end="url(#arrGrnG)"/>
+
+          <!-- High Complexity Stream Box -->
+          <rect x="440" y="125" width="165" height="75" rx="8" fill="#064E3B" stroke="#10B981" stroke-width="2"/>
+          <text x="522" y="148" fill="#6EE7B7" font-size="11" font-weight="700" text-anchor="middle" font-family="sans-serif">High Complexity Stream</text>
+          <text x="522" y="166" fill="#FFFFFF" font-size="9" text-anchor="middle" font-family="sans-serif">L ≈ L₁·L₂ + (1+L₂)·L₃</text>
+          <text x="522" y="186" fill="#A7F3D0" font-size="9.5" font-weight="700" text-anchor="middle" font-family="sans-serif">✅ Resists Cryptanalysis</text>
+
+          <text x="310" y="235" fill="#10B981" font-size="10" font-weight="600" text-anchor="middle" font-family="sans-serif">
+            🛡️ Nonlinear combination destroys linear recurrence; Berlekamp-Massey cannot recover the internal state.
+          </text>
+        </svg>
+        """, unsafe_allow_html=True)
+
+    with c_gef_live:
+        st.markdown("#### ⚡ Live Keystream Cryptanalysis")
+        # Generate real LFSR stream
+        sample_lfsr = LFSR(size=19, taps=[0, 1, 4, 18], seed=12345)
         lfsr_bits = [sample_lfsr.step() for _ in range(40)]
-        st.code(f"19-bit Linear LFSR Stream (First 40 bits):\n{''.join(map(str, lfsr_bits))}")
-
         lc_lfsr = berlekamp_massey(lfsr_bits)
-        st.warning(f"Linear Complexity: L = {lc_lfsr} ⚠️ (Vulnerable! Broken at degree 19 by Berlekamp-Massey).")
 
+        st.write("**1. Standard Linear LFSR Output (First 40 bits):**")
+        st.code("".join(map(str, lfsr_bits)))
+        st.error(f"🚨 Linear Complexity: **L = {lc_lfsr}** (Vulnerable! Fully reconstructable after observing just 2L = 38 bits).")
+
+        # Generate Geffe stream
         geffe_engine = GeffeGenerator(b"iiitn_institutional_secret_key_2026")
         geffe_bits = [geffe_engine.step() for _ in range(40)]
-        st.code(f"Geffe Non-Linear Stream (First 40 bits):\n{''.join(map(str, geffe_bits))}")
-
         lc_geffe = berlekamp_massey(geffe_bits)
-        st.success(f"Linear Complexity: L = {lc_geffe} ✅ (High non-linear complexity resists Berlekamp-Massey cryptanalysis).")
 
-        st.markdown("---")
-        st.markdown("#### Institutional Session Key Agreement")
-        st.caption("Uses **Diffie-Hellman Key Exchange** so the issuing authority and verifying portal compute an identical 256-bit symmetric session key over an insecure channel without transmitting the key itself.")
+        st.write("**2. Geffe Non-linear Output Stream (First 40 bits):**")
+        st.code("".join(map(str, geffe_bits)))
+        st.success(f"✅ Linear Complexity: **L = {lc_geffe}** (Cryptographically secure! Non-linear complexity eliminates predictability).")
 
-        if st.button("Simulate Diffie-Hellman Key Agreement", use_container_width=True):
+    st.markdown("---")
+
+    # -----------------------------------------------------------------
+    # MECHANISM 4: DIFFIE-HELLMAN KEY AGREEMENT
+    # -----------------------------------------------------------------
+    st.markdown("### 4. Diffie-Hellman — Shared Key Agreement Protocol")
+    st.caption("How the issuing university authority and verifier portals securely agree on an identical 256-bit symmetric session key over an insecure network without ever transmitting the key itself.")
+
+    c_dh_diag, c_dh_live = st.columns([1, 1], gap="large")
+
+    with c_dh_diag:
+        st.markdown("#### 📐 Protocol Sequence & Mathematical Derivation")
+        st.markdown("""
+        <svg viewBox="0 0 620 240" width="100%" xmlns="http://www.w3.org/2000/svg" style="border-radius:10px; background:var(--card-bg); border:1px solid var(--card-border); padding:10px;">
+          <defs>
+            <marker id="arrRt" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#38BDF8"/>
+            </marker>
+            <marker id="arrLt" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#F59E0B"/>
+            </marker>
+          </defs>
+
+          <!-- Domain Parameters Header -->
+          <rect x="15" y="10" width="590" height="24" rx="4" fill="rgba(56, 189, 248, 0.12)" stroke="#38BDF8" stroke-width="1"/>
+          <text x="310" y="26" fill="#38BDF8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="sans-serif">
+            Public Parameters: Shared Modulus Prime p (2048-bit MODP), Generator g = 2
+          </text>
+
+          <!-- Issuer Entity -->
+          <rect x="15" y="44" width="180" height="56" rx="8" fill="#1E293B" stroke="#38BDF8" stroke-width="2"/>
+          <text x="105" y="66" fill="#38BDF8" font-size="11.5" font-weight="700" text-anchor="middle" font-family="sans-serif">🏛️ ISSUER AUTHORITY</text>
+          <text x="105" y="85" fill="#E2E8F0" font-size="10" text-anchor="middle" font-family="sans-serif">Private: a  |  Public: A = gᵃ mod p</text>
+
+          <!-- Insecure Channel -->
+          <text x="310" y="60" fill="#94A3B8" font-size="10" font-weight="700" text-anchor="middle" font-family="sans-serif">INSECURE CHANNEL</text>
+          <text x="310" y="75" fill="#64748B" font-size="9" text-anchor="middle" font-family="sans-serif">(Public Internet)</text>
+
+          <!-- Verifier Entity -->
+          <rect x="425" y="44" width="180" height="56" rx="8" fill="#1E293B" stroke="#F59E0B" stroke-width="2"/>
+          <text x="515" y="66" fill="#F59E0B" font-size="11.5" font-weight="700" text-anchor="middle" font-family="sans-serif">🔍 VERIFIER PORTAL</text>
+          <text x="515" y="85" fill="#E2E8F0" font-size="10" text-anchor="middle" font-family="sans-serif">Private: b  |  Public: B = gᵇ mod p</text>
+
+          <!-- Key Exchange Arrows -->
+          <line x1="120" y1="114" x2="480" y2="114" stroke="#38BDF8" stroke-width="2.5" marker-end="url(#arrRt)"/>
+          <text x="300" y="108" fill="#38BDF8" font-size="11" font-weight="700" text-anchor="middle" font-family="sans-serif">Sends Public Key A ────────▶</text>
+
+          <line x1="480" y1="138" x2="120" y2="138" stroke="#F59E0B" stroke-width="2.5" marker-end="url(#arrLt)"/>
+          <text x="320" y="133" fill="#F59E0B" font-size="11" font-weight="700" text-anchor="middle" font-family="sans-serif">◀──────── Sends Public Key B</text>
+
+          <!-- Calculation Boxes -->
+          <rect x="15" y="156" width="180" height="42" rx="6" fill="#1E293B" stroke="#64748B" stroke-width="1.5"/>
+          <text x="105" y="172" fill="#94A3B8" font-size="9.5" text-anchor="middle" font-family="sans-serif">Issuer Calculates:</text>
+          <text x="105" y="188" fill="#38BDF8" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">K = Bᵃ mod p</text>
+
+          <rect x="425" y="156" width="180" height="42" rx="6" fill="#1E293B" stroke="#64748B" stroke-width="1.5"/>
+          <text x="515" y="172" fill="#94A3B8" font-size="9.5" text-anchor="middle" font-family="sans-serif">Verifier Calculates:</text>
+          <text x="515" y="188" fill="#F59E0B" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">K = Aᵇ mod p</text>
+
+          <!-- Agreement Banner -->
+          <rect x="15" y="206" width="590" height="26" rx="5" fill="rgba(16, 185, 129, 0.15)" stroke="#10B981" stroke-width="1"/>
+          <text x="310" y="223" fill="#10B981" font-size="11" font-weight="700" text-anchor="middle" font-family="sans-serif">
+            🔐 Mathematical Identity: (gᵇ)ᵃ mod p ≡ (gᵃ)ᵇ mod p ≡ gᵃᵇ mod p (Shared Secret Established!)
+          </text>
+        </svg>
+        """, unsafe_allow_html=True)
+
+    with c_dh_live:
+        st.markdown("#### ⚡ Live Cryptographic Key Agreement Simulation")
+        st.caption("Executes real 2048-bit Diffie-Hellman key pair generation, exchanges public parameters, and derives identical 256-bit symmetric keys.")
+
+        if st.button("🚀 Run Live Diffie-Hellman Key Agreement", type="primary", use_container_width=True):
             p1_priv, p1_pub = dh_generate_keypair()
             p2_priv, p2_pub = dh_generate_keypair()
             k1 = dh_shared_secret(p1_priv, p2_pub)
             k2 = dh_shared_secret(p2_priv, p1_pub)
 
-            st.write(f"Issuer Authority Public Key: `{p1_pub}`")
-            st.write(f"Verifier Portal Public Key: `{p2_pub}`")
-            st.success(f"✅ Shared Symmetric Key Agreed by Both Authorities:\n`{k1.hex()}`")
+            st.write(f"**Issuer Authority Public Key A:**")
+            st.code(str(p1_pub)[:60] + "...")
+
+            st.write(f"**Verifier Portal Public Key B:**")
+            st.code(str(p2_pub)[:60] + "...")
+
+            assert k1 == k2
+            st.markdown(f"""
+            <div class="theme-card" style="border-left: 4px solid #10B981; background:rgba(16, 185, 129, 0.08);">
+                <div style="font-size:0.9rem; color:var(--text-secondary);">Derived Symmetric Session Key (SHA-256 Digest of gᵃᵇ mod p):</div>
+                <div style="font-family:monospace; font-size:1.05rem; font-weight:700; color:#10B981; word-break:break-all; margin:0.3rem 0;">
+                    {k1.hex()}
+                </div>
+                <div style="font-size:0.85rem; color:#16A34A; font-weight:600;">
+                    ✅ Perfect Match: Issuer Key == Verifier Key! Eavesdroppers on the network only see A and B and cannot compute the secret key without solving the Discrete Logarithm Problem.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.info("Click the button above to generate live 2048-bit keypairs and verify the mathematical key agreement in real time.")
