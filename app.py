@@ -278,7 +278,7 @@ with tab_admin:
 # =====================================================================
 # TAB 2: STUDENT PORTAL (OPEN WITH ROLL NO & DOWNLOAD)
 # =====================================================================
-with tab2:
+with tab_student:
     st.markdown('<span class="portal-badge badge-student">STUDENT CREDENTIAL ACCESS</span>', unsafe_allow_html=True)
     st.header("Student Degree Credential Portal")
     st.write("Students can access, view, and download their official tamper-proof degree certificate using their University Roll Number.")
@@ -340,7 +340,7 @@ with tab2:
 # =====================================================================
 # TAB 3: TAMPER LAB (FORGERY SIMULATOR)
 # =====================================================================
-with tab3:
+with tab_tamper:
     st.markdown('<span class="portal-badge badge-lab">ATTACK SIMULATION & AUDITING</span>', unsafe_allow_html=True)
     st.header("Tamper Lab: Forgery Simulator")
     st.write("Make targeted edits or simulate forgery attacks on a genuine certificate. Then, send it to the **Administration Portal** to watch the tamper engine detect and locate the exact edits!")
