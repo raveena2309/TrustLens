@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw
 from certificate import generate_certificate, _get_font, FIELD_LAYOUT
 from crypto import (
     rsa_keygen, dh_generate_keypair, dh_shared_secret,
-    LFSR, GeffeGenerator, berlekamp_massey
+    LFSR, GeffeGenerator, geffe_encrypt, berlekamp_massey
 )
 from stego import issue_certificate_full, verify_certificate_full
 from privacy import laplace_mechanism, exponential_mechanism, PrivacyBudget
