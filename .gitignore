@@ -16,3 +16,7 @@ ENV/
 
 # Streamlit run cache
 .streamlit/
+
+# Database files
+trustlens.db
+

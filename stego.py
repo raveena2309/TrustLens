@@ -98,16 +98,16 @@ def parse_payload(repeated_bits: list, session_key: bytes, issuer_pub: dict, red
 # ==========================================
 # 2. Robust DCT Layer (Certificate ID)
 # ==========================================
-def embed_dct_id(image: Image.Image, cert_id: str, q: float = 20.0) -> Image.Image:
-    """Embeds Certificate ID into 8x8 DCT mid-frequency coefficient (3, 2) of Y channel using QIM."""
+def embed_dct_id(image: Image.Image, cert_id: str, q: float = 24.0) -> Image.Image:
+    """Embeds Certificate ID (standardized to 16 bytes) into 8x8 DCT mid-frequency coefficient (3, 2) of Y channel using QIM."""
     arr = np.array(image, dtype=np.uint8)
     ycrcb = cv2.cvtColor(arr, cv2.COLOR_RGB2YCrCb)
     y = ycrcb[:, :, 0].astype(np.float32)
 
-    # ID to bits
-    id_bytes = cert_id.encode("utf-8")
-    bits = [int((len(id_bytes) >> (7 - i)) & 1) for i in range(8)]
-    for b in id_bytes:
+    # Standardize to fixed 16 bytes (128 bits)
+    raw_bytes = cert_id.strip()[:16].ljust(16).encode("utf-8")
+    bits = []
+    for b in raw_bytes:
         for shift in range(7, -1, -1):
             bits.append((b >> shift) & 1)
 
@@ -141,7 +141,7 @@ def embed_dct_id(image: Image.Image, cert_id: str, q: float = 20.0) -> Image.Ima
     return Image.fromarray(cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2RGB), "RGB")
 
 
-def extract_dct_id(image: Image.Image, q: float = 20.0) -> Optional[str]:
+def extract_dct_id(image: Image.Image, q: float = 24.0) -> Optional[str]:
     """Extracts Certificate ID using majority voting across redundant 8x8 DCT blocks."""
     arr = np.array(image, dtype=np.uint8)
     ycrcb = cv2.cvtColor(arr, cv2.COLOR_RGB2YCrCb)
@@ -149,8 +149,7 @@ def extract_dct_id(image: Image.Image, q: float = 20.0) -> Optional[str]:
 
     h, w = y.shape
     total_blocks = (h // 8) * (w // 8)
-    # Expected: 8 bits len + 12 chars * 8 = 104 bits
-    expected_bits = 104
+    expected_bits = 128  # 16 bytes * 8 bits
     bpb = total_blocks // expected_bits
     if bpb < 1: return None
 
@@ -176,9 +175,8 @@ def extract_dct_id(image: Image.Image, q: float = 20.0) -> Optional[str]:
             for bit in recovered_bits[i:i+8]:
                 b = (b << 1) | bit
             val.append(b)
-        id_len = val[0]
-        if id_len > 0 and len(val) >= 1 + id_len:
-            return bytes(val[1:1+id_len]).decode("utf-8")
+        extracted = bytes(val).decode("utf-8", errors="replace").strip()
+        return extracted if extracted else None
     except Exception:
         pass
     return None

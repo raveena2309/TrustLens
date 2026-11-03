@@ -4,8 +4,10 @@ Designed for IIIT Nagpur (Indian Institute of Information Technology, Nagpur).
 Connected to SQLite Database Backend (trustlens.db).
 """
 
+import os
 import io
 import re
+import json
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -31,89 +33,262 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Cream & Warm Brown Institutional Theme
+# Cream & Warm Brown Institutional Theme (Supporting both Light Mode & Dark Mode)
 st.markdown("""
 <style>
-    /* Global Background and Typography */
+    /* CSS Variables for Institutional Security Theme */
+    :root {
+        --bg-app: #FAF7F2;
+        --card-bg: #FFFDF9;
+        --card-border: #E8DCCB;
+        --text-primary: #2C1E14;
+        --text-secondary: #6B523E;
+        --accent-gold: #966023;
+        --accent-border: #D8C3A5;
+        
+        --badge-admin-bg: #EDE4D8;
+        --badge-admin-txt: #4A3525;
+        --badge-admin-bdr: #D4C3A3;
+        
+        --badge-stud-bg: #E8EFE6;
+        --badge-stud-txt: #2D5A27;
+        --badge-stud-bdr: #C4D7BF;
+        
+        --badge-lab-bg: #FDF3E3;
+        --badge-lab-txt: #8C5311;
+        --badge-lab-bdr: #ECD4A4;
+        
+        --badge-tech-bg: #EDE7F6;
+        --badge-tech-txt: #4A148C;
+        --badge-tech-bdr: #D1C4E9;
+        
+        --gen-bg: #F0FDF4;
+        --gen-bdr: #22C55E;
+        --gen-title: #15803D;
+        --gen-txt: #166534;
+        
+        --forg-bg: #FEF2F2;
+        --forg-bdr: #EF4444;
+        --forg-title: #B91C1C;
+        --forg-txt: #991B1B;
+        
+        --dmg-bg: #FFFBEB;
+        --dmg-bdr: #F59E0B;
+        --dmg-title: #B45309;
+        --dmg-txt: #92400E;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg-app: #0F141C;
+            --card-bg: #161D26;
+            --card-border: #2A3645;
+            --text-primary: #F3EFE9;
+            --text-secondary: #B6AEA2;
+            --accent-gold: #E5A93C;
+            --accent-border: #4A5B73;
+            
+            --badge-admin-bg: rgba(229, 169, 60, 0.15);
+            --badge-admin-txt: #F5C77E;
+            --badge-admin-bdr: rgba(229, 169, 60, 0.35);
+            
+            --badge-stud-bg: rgba(34, 197, 94, 0.15);
+            --badge-stud-txt: #86EFAC;
+            --badge-stud-bdr: rgba(34, 197, 94, 0.35);
+            
+            --badge-lab-bg: rgba(239, 68, 68, 0.15);
+            --badge-lab-txt: #FCA5A5;
+            --badge-lab-bdr: rgba(239, 68, 68, 0.35);
+            
+            --badge-tech-bg: rgba(168, 85, 247, 0.15);
+            --badge-tech-txt: #D8B4FE;
+            --badge-tech-bdr: rgba(168, 85, 247, 0.35);
+            
+            --gen-bg: #072314;
+            --gen-bdr: #22C55E;
+            --gen-title: #4ADE80;
+            --gen-txt: #A7F3D0;
+            
+            --forg-bg: #2B0C10;
+            --forg-bdr: #EF4444;
+            --forg-title: #F87171;
+            --forg-txt: #FECACA;
+            
+            --dmg-bg: #2B1B06;
+            --dmg-bdr: #F59E0B;
+            --dmg-title: #FBBF24;
+            --dmg-txt: #FDE68A;
+        }
+    }
+
+    [data-theme="dark"], .stApp[data-theme="dark"] {
+        --bg-app: #0F141C !important;
+        --card-bg: #161D26 !important;
+        --card-border: #2A3645 !important;
+        --text-primary: #F3EFE9 !important;
+        --text-secondary: #B6AEA2 !important;
+        --accent-gold: #E5A93C !important;
+        --accent-border: #4A5B73 !important;
+        
+        --badge-admin-bg: rgba(229, 169, 60, 0.15) !important;
+        --badge-admin-txt: #F5C77E !important;
+        --badge-admin-bdr: rgba(229, 169, 60, 0.35) !important;
+        
+        --badge-stud-bg: rgba(34, 197, 94, 0.15) !important;
+        --badge-stud-txt: #86EFAC !important;
+        --badge-stud-bdr: rgba(34, 197, 94, 0.35) !important;
+        
+        --badge-lab-bg: rgba(239, 68, 68, 0.15) !important;
+        --badge-lab-txt: #FCA5A5 !important;
+        --badge-lab-bdr: rgba(239, 68, 68, 0.35) !important;
+        
+        --badge-tech-bg: rgba(168, 85, 247, 0.15) !important;
+        --badge-tech-txt: #D8B4FE !important;
+        --badge-tech-bdr: rgba(168, 85, 247, 0.35) !important;
+        
+        --gen-bg: #072314 !important;
+        --gen-bdr: #22C55E !important;
+        --gen-title: #4ADE80 !important;
+        --gen-txt: #A7F3D0 !important;
+        
+        --forg-bg: #2B0C10 !important;
+        --forg-bdr: #EF4444 !important;
+        --forg-title: #F87171 !important;
+        --forg-txt: #FECACA !important;
+        
+        --dmg-bg: #2B1B06 !important;
+        --dmg-bdr: #F59E0B !important;
+        --dmg-title: #FBBF24 !important;
+        --dmg-txt: #FDE68A !important;
+    }
+
+    [data-theme="light"], .stApp[data-theme="light"] {
+        --bg-app: #FAF7F2 !important;
+        --card-bg: #FFFDF9 !important;
+        --card-border: #E8DCCB !important;
+        --text-primary: #2C1E14 !important;
+        --text-secondary: #6B523E !important;
+        --accent-gold: #966023 !important;
+        --accent-border: #D8C3A5 !important;
+        
+        --badge-admin-bg: #EDE4D8 !important;
+        --badge-admin-txt: #4A3525 !important;
+        --badge-admin-bdr: #D4C3A3 !important;
+        
+        --badge-stud-bg: #E8EFE6 !important;
+        --badge-stud-txt: #2D5A27 !important;
+        --badge-stud-bdr: #C4D7BF !important;
+        
+        --badge-lab-bg: #FDF3E3 !important;
+        --badge-lab-txt: #8C5311 !important;
+        --badge-lab-bdr: #ECD4A4 !important;
+        
+        --badge-tech-bg: #EDE7F6 !important;
+        --badge-tech-txt: #4A148C !important;
+        --badge-tech-bdr: #D1C4E9 !important;
+        
+        --gen-bg: #F0FDF4 !important;
+        --gen-bdr: #22C55E !important;
+        --gen-title: #15803D !important;
+        --gen-txt: #166534 !important;
+        
+        --forg-bg: #FEF2F2 !important;
+        --forg-bdr: #EF4444 !important;
+        --forg-title: #B91C1C !important;
+        --forg-txt: #991B1B !important;
+        
+        --dmg-bg: #FFFBEB !important;
+        --dmg-bdr: #F59E0B !important;
+        --dmg-title: #B45309 !important;
+        --dmg-txt: #92400E !important;
+    }
+
     .stApp {
-        background-color: #FBF8F3;
-        color: #38281C;
+        background-color: var(--bg-app);
+        color: var(--text-primary);
     }
     
-    /* Headers */
     .main-header {
         font-family: 'Georgia', serif;
         font-size: 2.2rem;
         font-weight: 700;
-        color: #38281C;
+        color: var(--text-primary);
         margin-bottom: 0.2rem;
     }
     .sub-header {
-        font-family: 'Arial', sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         font-size: 1.05rem;
-        color: #6B4E3D;
+        color: var(--text-secondary);
         margin-bottom: 1.4rem;
     }
     
-    /* Institutional Badges */
     .badge-pill {
         display: inline-block;
-        padding: 0.25rem 0.8rem;
+        padding: 0.28rem 0.85rem;
         border-radius: 9999px;
-        font-size: 0.82rem;
-        font-weight: 600;
-        letter-spacing: 0.03em;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
         margin-bottom: 0.6rem;
     }
-    .badge-admin { background-color: #EDE4D8; color: #4A3525; border: 1px solid #D4C3A3; }
-    .badge-student { background-color: #E8EFE6; color: #2D5A27; border: 1px solid #C4D7BF; }
-    .badge-lab { background-color: #FDF3E3; color: #8C5311; border: 1px solid #ECD4A4; }
-    .badge-tech { background-color: #EDE7F6; color: #4A148C; border: 1px solid #D1C4E9; }
+    .badge-admin { background-color: var(--badge-admin-bg); color: var(--badge-admin-txt); border: 1px solid var(--badge-admin-bdr); }
+    .badge-student { background-color: var(--badge-stud-bg); color: var(--badge-stud-txt); border: 1px solid var(--badge-stud-bdr); }
+    .badge-lab { background-color: var(--badge-lab-bg); color: var(--badge-lab-txt); border: 1px solid var(--badge-lab-bdr); }
+    .badge-tech { background-color: var(--badge-tech-bg); color: var(--badge-tech-txt); border: 1px solid var(--badge-tech-bdr); }
 
-    /* Cards */
     .theme-card {
-        background-color: #FFFDF9;
-        border: 1px solid #E8DCB8;
-        border-radius: 8px;
-        padding: 1.25rem;
+        background-color: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 10px;
+        padding: 1.3rem;
         margin-bottom: 1rem;
-        box-shadow: 0 1px 3px rgba(56, 40, 28, 0.05);
-    }
-    .card-genuine {
-        background-color: #F3FBF5;
-        border-left: 6px solid #2E7D32;
-        border-top: 1px solid #D7ECD9;
-        border-right: 1px solid #D7ECD9;
-        border-bottom: 1px solid #D7ECD9;
-        padding: 1.25rem;
-        border-radius: 6px;
-        margin: 1rem 0;
-    }
-    .card-forged {
-        background-color: #FDF4F4;
-        border-left: 6px solid #C62828;
-        border-top: 1px solid #F8D7D7;
-        border-right: 1px solid #F8D7D7;
-        border-bottom: 1px solid #F8D7D7;
-        padding: 1.25rem;
-        border-radius: 6px;
-        margin: 1rem 0;
-    }
-    .card-damaged {
-        background-color: #FFFDF0;
-        border-left: 6px solid #E65100;
-        border-top: 1px solid #FFE7A0;
-        border-right: 1px solid #FFE7A0;
-        border-bottom: 1px solid #FFE7A0;
-        padding: 1.25rem;
-        border-radius: 6px;
-        margin: 1rem 0;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
     }
     
-    /* Input Styling Accents */
-    div[data-baseweb="input"] {
-        background-color: #FFFFFF !important;
-        border-color: #D4C3A3 !important;
+    .card-genuine {
+        background-color: var(--gen-bg);
+        border-left: 6px solid var(--gen-bdr);
+        border-top: 1px solid var(--gen-bdr);
+        border-right: 1px solid var(--gen-bdr);
+        border-bottom: 1px solid var(--gen-bdr);
+        padding: 1.3rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+    .card-genuine h3 { color: var(--gen-title) !important; margin: 0; }
+    .card-genuine p { color: var(--gen-txt) !important; margin: 0.4rem 0 0 0; font-size: 1.05rem; }
+
+    .card-forged {
+        background-color: var(--forg-bg);
+        border-left: 6px solid var(--forg-bdr);
+        border-top: 1px solid var(--forg-bdr);
+        border-right: 1px solid var(--forg-bdr);
+        border-bottom: 1px solid var(--forg-bdr);
+        padding: 1.3rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+    .card-forged h3 { color: var(--forg-title) !important; margin: 0; }
+    .card-forged p { color: var(--forg-txt) !important; margin: 0.4rem 0 0 0; font-size: 1.05rem; }
+
+    .card-damaged {
+        background-color: var(--dmg-bg);
+        border-left: 6px solid var(--dmg-bdr);
+        border-top: 1px solid var(--dmg-bdr);
+        border-right: 1px solid var(--dmg-bdr);
+        border-bottom: 1px solid var(--dmg-bdr);
+        padding: 1.3rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+    .card-damaged h3 { color: var(--dmg-title) !important; margin: 0; }
+    .card-damaged p { color: var(--dmg-txt) !important; margin: 0.4rem 0 0 0; font-size: 1.05rem; }
+
+    [data-testid="stMetric"] {
+        background-color: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        padding: 0.8rem 1rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -122,11 +297,34 @@ st.markdown("""
 # Initialize and Cache Cryptographic Keys
 @st.cache_resource(show_spinner="Initializing Institutional Cryptographic Authority...")
 def get_system_keys():
+    key_file = "institutional_keys.json"
+    if os.path.exists(key_file):
+        try:
+            with open(key_file, "r") as f:
+                data = json.load(f)
+            return (
+                data["i_pub"], data["i_priv"],
+                data["v_pub"], data["v_priv"],
+                bytes.fromhex(data["session_key"])
+            )
+        except Exception:
+            pass
+
     i_pub, i_priv = rsa_keygen(bits=1024)
     v_pub, v_priv = rsa_keygen(bits=1024)
     a_priv, a_pub = dh_generate_keypair()
     b_priv, b_pub = dh_generate_keypair()
     session_key = dh_shared_secret(a_priv, b_pub)
+
+    try:
+        with open(key_file, "w") as f:
+            json.dump({
+                "i_pub": i_pub, "i_priv": i_priv,
+                "v_pub": v_pub, "v_priv": v_priv,
+                "session_key": session_key.hex()
+            }, f)
+    except Exception:
+        pass
     return i_pub, i_priv, v_pub, v_priv, session_key
 
 
@@ -243,65 +441,115 @@ with tab_admin:
 
     # 2. AUDIT & VERIFY
     elif admin_mode == "🔍 Audit & Verify Certificate Authenticity":
-        st.markdown("### Forensic Certificate Verification Audit")
-        st.write("Verifies uploaded or registered certificates: decrypts stego payload, checks the digital signature, and validates 1,800 block checksums to identify exact tampering.")
+        st.markdown('<span class="badge-pill badge-admin">FORENSIC VERIFICATION ENGINE</span>', unsafe_allow_html=True)
+        st.markdown("### Cryptographic Credential Audit & Tamper Localization")
+        st.write("Verifies certificate authenticity against digital signatures and computes 1,800 block checksums to identify exact tampering down to 32×32 pixel regions.")
 
-        audit_source = st.radio(
-            "Select Audit Source:",
-            ["📁 Upload Certificate Image to Audit", "🧪 Audit Modified Image from Tamper Lab", "💾 Audit Directly from SQLite Database"],
+        audit_method = st.radio(
+            "Select Audit Verification Method:",
+            ["📁 Upload Certificate Image File (PNG / JPEG)", "🎓 Audit by University Roll Number (BTxxYYYxxx)"],
             horizontal=True
         )
 
         audit_target_img = None
-        if audit_source == "📁 Upload Certificate Image to Audit":
-            uploaded_cert = st.file_uploader("Upload certificate file (PNG/JPEG):", type=["png", "jpg", "jpeg"])
-            if uploaded_cert:
-                audit_target_img = Image.open(uploaded_cert).convert("RGB")
-        elif audit_source == "🧪 Audit Modified Image from Tamper Lab":
-            if st.session_state.lab_tampered_img is not None:
-                audit_target_img = st.session_state.lab_tampered_img
-                st.info(f"Loaded certificate from Tamper Lab: {st.session_state.lab_tamper_desc}")
-            else:
-                st.warning("No modified certificate found in the Tamper Lab yet. Create a test forgery in the 'Tamper Lab' tab first!")
+        audit_source_label = ""
+
+        if audit_method == "📁 Upload Certificate Image File (PNG / JPEG)":
+            st.markdown("#### Upload Certificate for Forensic Verification")
+            st.caption("Upload any official certificate or a modified certificate exported from the Tamper Lab.")
+            uploaded_file = st.file_uploader(
+                "Upload Certificate Image (PNG or JPEG):",
+                type=["png", "jpg", "jpeg"],
+                key="audit_file_uploader"
+            )
+
+            if uploaded_file is not None:
+                audit_target_img = Image.open(uploaded_file).convert("RGB")
+                audit_source_label = f"Uploaded file: {uploaded_file.name}"
+                file_sig = f"{uploaded_file.name}_{uploaded_file.size}"
+
+                c_aud_btn, c_aud_info = st.columns([1, 2])
+                with c_aud_btn:
+                    btn_run_audit = st.button("🔍 Run Forensic Verification Audit", type="primary", use_container_width=True)
+                with c_aud_info:
+                    st.info(f"Loaded: **{uploaded_file.name}** ({uploaded_file.size // 1024} KB)")
+
+                # Auto-run when file changes or when button is clicked
+                if btn_run_audit or st.session_state.get("last_audited_file_sig") != file_sig:
+                    st.session_state.last_audited_file_sig = file_sig
+                    with st.spinner("Executing cryptographic audit, verifying RSA signature, and checking 1,800 block checksums..."):
+                        st.session_state.active_audit_result = verify_certificate_full(audit_target_img, v_priv, i_pub, session_key)
+                        st.session_state.active_audit_img = audit_target_img
+                        st.session_state.active_audit_label = audit_source_label
+
         else:
-            all_recs = get_all_records()
-            if all_recs:
-                db_pick = st.selectbox("Choose database record to audit:", [r["roll"] for r in all_recs])
-                fetched_entry = get_certificate(db_pick)
-                if fetched_entry:
-                    audit_target_img = fetched_entry[1]
+            st.markdown("#### Audit Stored Credential by University Roll Number")
+            st.caption("Verify official degree credentials stored in the institutional SQLite database.")
 
-        if audit_target_img is not None:
-            if st.button("🔍 Run Full Cryptographic & Forensic Audit", type="primary", use_container_width=True):
-                with st.spinner("Checking RSA signature, recomputing block checksums, and reading DCT watermark..."):
-                    audit_result = verify_certificate_full(audit_target_img, v_priv, i_pub, session_key)
-                    st.session_state.active_audit_result = audit_result
-                    st.session_state.active_audit_img = audit_target_img
+            all_records = get_all_records()
+            c_r1, c_r2 = st.columns([2, 1])
+            with c_r1:
+                audit_roll_input = st.text_input(
+                    "Enter Roll Number (BTxxYYYxxx):",
+                    placeholder="e.g. BT22CSE045",
+                    help="Official format: BT + Year + Branch + Roll"
+                ).strip().upper()
+            with c_r2:
+                quick_pick_roll = st.selectbox(
+                    "Or pick from registered records:",
+                    ["-- Select from Database --"] + [f"{r['roll']} - {r['name']}" for r in all_records]
+                )
 
+            selected_roll = audit_roll_input if audit_roll_input else (quick_pick_roll.split(" - ")[0] if quick_pick_roll != "-- Select from Database --" else "")
+
+            if selected_roll:
+                c_btn_r, _ = st.columns([1, 2])
+                with c_btn_r:
+                    btn_audit_roll = st.button(f"🔍 Audit Credential for {selected_roll}", type="primary", use_container_width=True)
+                
+                roll_sig = f"roll_{selected_roll}"
+                if btn_audit_roll or st.session_state.get("last_audited_roll_sig") != roll_sig:
+                    st.session_state.last_audited_roll_sig = roll_sig
+                    db_entry = get_certificate(selected_roll)
+                    if db_entry:
+                        det, cert_img = db_entry
+                        audit_target_img = cert_img
+                        audit_source_label = f"Database Record: {selected_roll} ({det['name']})"
+                        with st.spinner(f"Verifying cryptographic integrity for {selected_roll}..."):
+                            st.session_state.active_audit_result = verify_certificate_full(audit_target_img, v_priv, i_pub, session_key)
+                            st.session_state.active_audit_img = audit_target_img
+                            st.session_state.active_audit_label = audit_source_label
+                    else:
+                        st.error(f"❌ No record found for Roll Number '{selected_roll}'.")
+
+        # DISPLAY AUDIT RESULTS
         if "active_audit_result" in st.session_state and st.session_state.get("active_audit_img") is not None:
             rep = st.session_state.active_audit_result
             inspected_image = st.session_state.active_audit_img
+
+            st.markdown("---")
+            st.caption(f"Audit Target: **{st.session_state.get('active_audit_label', 'Certificate Image')}**")
 
             # Verdict Banner
             if rep["verdict"] == "GENUINE":
                 st.markdown(f"""
                 <div class="card-genuine">
-                    <h3 style="color:#1B5E20; margin:0;">✅ VERDICT: GENUINE CERTIFICATE</h3>
-                    <p style="margin:0.5rem 0 0 0; color:#2E7D32; font-size:1.05rem;">{rep['reason']}</p>
+                    <h3>✅ VERDICT: GENUINE CERTIFICATE</h3>
+                    <p>{rep['reason']}</p>
                 </div>
                 """, unsafe_allow_html=True)
             elif rep["verdict"] == "FORGED / EDITED":
                 st.markdown(f"""
                 <div class="card-forged">
-                    <h3 style="color:#B71C1C; margin:0;">🚨 VERDICT: FORGED / TAMPERED CERTIFICATE</h3>
-                    <p style="margin:0.5rem 0 0 0; color:#C62828; font-size:1.05rem;">{rep['reason']}</p>
+                    <h3>🚨 VERDICT: FORGED / TAMPERED CERTIFICATE</h3>
+                    <p>{rep['reason']}</p>
                 </div>
                 """, unsafe_allow_html=True)
             elif rep["verdict"] == "DAMAGED ORIGINAL":
                 st.markdown(f"""
                 <div class="card-damaged">
-                    <h3 style="color:#E65100; margin:0;">⚠️ VERDICT: DAMAGED ORIGINAL</h3>
-                    <p style="margin:0.5rem 0 0 0; color:#BF360C; font-size:1.05rem;">{rep['reason']}</p>
+                    <h3>⚠️ VERDICT: DAMAGED ORIGINAL</h3>
+                    <p>{rep['reason']}</p>
                 </div>
                 """, unsafe_allow_html=True)
             else:
@@ -310,7 +558,8 @@ with tab_admin:
             # Summary Metrics
             c_m1, c_m2, c_m3 = st.columns(3)
             c_m1.metric("Cryptographic Signature", "✅ Valid & Authentic" if rep["sig_valid"] else "❌ Invalid")
-            c_m2.metric("Tampered 32x32 Blocks", f"{rep['failed_blocks']} / 1,800 blocks")
+            tamper_pct = (rep['failed_blocks'] / 1800.0) * 100.0
+            c_m2.metric("Tampered 32x32 Blocks", f"{rep['failed_blocks']} / 1,800 ({tamper_pct:.1f}%)")
             c_m3.metric("Robust DCT Identifier", rep["dct_id"] or "Not Detected")
 
             # Visual Comparison: Certificate vs Tamper Heatmap
@@ -322,10 +571,13 @@ with tab_admin:
 
             with c_ins2:
                 st.subheader("Tamper Localization Heatmap")
-                st.image(rep["heatmap"], caption="Failed 32x32 blocks highlighted in red", use_container_width=True)
+                caption_text = "All 1,800 blocks passed checksums" if rep['failed_blocks'] == 0 else f"{rep['failed_blocks']} altered blocks highlighted in red"
+                st.image(rep["heatmap"], caption=caption_text, use_container_width=True)
 
             if rep["hidden_record"]:
                 st.markdown("#### Authentic Digitally Signed Record Extracted from Hidden Stego Layer")
+                if rep["verdict"] == "FORGED / EDITED":
+                    st.warning("⚠️ **Forensic Discrepancy Detected:** While the visual pixels on the certificate were modified, the cryptographically signed and encrypted steganographic record below was extracted directly from the authentic issuer payload.")
                 st.dataframe(pd.DataFrame([rep["hidden_record"]]), use_container_width=True)
 
     # 3. DATABASE REGISTRY VIEW
@@ -372,12 +624,12 @@ with tab_student:
 
             st.markdown(f"""
             <div class="theme-card">
-                <h3 style="color:#38281C; font-family:'Georgia', serif; margin:0 0 0.6rem 0;">🎓 Official Degree Record: {details['name']}</h3>
-                <div style="display:flex; gap:2.5rem; flex-wrap:wrap; color:#5A402D; font-size:1.02rem;">
+                <h3 style="color:var(--text-primary); font-family:'Georgia', serif; margin:0 0 0.6rem 0;">🎓 Official Degree Record: {details['name']}</h3>
+                <div style="display:flex; gap:2.5rem; flex-wrap:wrap; color:var(--text-secondary); font-size:1.02rem;">
                     <div><b>Roll Number:</b> {details['roll']}</div>
                     <div><b>Program:</b> {details['degree']}</div>
                     <div><b>Graduation Year:</b> {details['year']}</div>
-                    <div><b>CGPA:</b> <span style="color:#8C1C1C; font-weight:700;">{details['cgpa']} / 10.0</span></div>
+                    <div><b>CGPA:</b> <span style="color:var(--accent-gold); font-weight:700;">{details['cgpa']} / 10.0</span></div>
                     <div><b>Certificate ID:</b> {details['cert_id']}</div>
                 </div>
             </div>
@@ -489,14 +741,10 @@ with tab_tamper:
                         st.session_state.lab_tamper_desc = f"Lossy JPEG compression (Q={jpeg_quality}) on {base_details['roll']}"
                         st.success("Compressed certificate as JPEG!")
 
-                # Transfer to Administration Button
                 if st.session_state.lab_tampered_img is not None:
                     st.markdown("---")
-                    st.write(f"**Current Tampered Version:** {st.session_state.lab_tamper_desc}")
-                    if st.button("🔍 Send to Administration for Verification ➡️", type="primary", use_container_width=True):
-                        st.session_state.active_audit_result = verify_certificate_full(st.session_state.lab_tampered_img, v_priv, i_pub, session_key)
-                        st.session_state.active_audit_img = st.session_state.lab_tampered_img
-                        st.success("✅ Transferred! Now click on the 'Administration Portal' tab to see the forensic detection results and red heatmap.")
+                    st.info(f"🧪 **Active Attack Simulation:** {st.session_state.lab_tamper_desc}")
+                    st.caption("⬇️ Use the download button on the right to save this modified certificate image. Then navigate to **Administration Portal ➔ Audit & Verify Certificate Authenticity** and upload it to test the forensic tamper detection.")
 
             with col_mod_preview:
                 st.markdown("### Certificate Preview")
