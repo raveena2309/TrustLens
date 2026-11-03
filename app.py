@@ -330,9 +330,13 @@ def get_system_keys():
 
 i_pub, i_priv, v_pub, v_priv, session_key = get_system_keys()
 
-# Initialize Database & Pre-seed IIITN Records
-init_db()
-seed_initial_records_if_empty(issue_certificate_full, i_priv, v_pub, session_key)
+# Initialize Database & Pre-seed IIITN Records (Cached so it runs once and never lags)
+@st.cache_resource(show_spinner="Initializing Institutional Database...")
+def setup_database(_issue_func, _i_priv, _v_pub, _session_key):
+    init_db()
+    seed_initial_records_if_empty(_issue_func, _i_priv, _v_pub, _session_key)
+
+setup_database(issue_certificate_full, i_priv, v_pub, session_key)
 
 # Session State for Labs
 if "budget" not in st.session_state:
