@@ -24,13 +24,23 @@ FIELD_LAYOUT = {
 
 
 def _get_font(name: str, size: int) -> ImageFont.ImageFont:
-    """Loads a font safely with fallbacks."""
-    for path in [f"C:\\Windows\\Fonts\\{name}.ttf", "arial.ttf", "times.ttf", "georgia.ttf"]:
+    """Loads a font safely with fallbacks across Windows, Linux, and Mac."""
+    candidates = [
+        f"C:\\Windows\\Fonts\\{name}.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf" if "georgia" in name.lower() or "times" in name.lower() else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+        f"{name}.ttf", "arial.ttf", "times.ttf", "georgia.ttf"
+    ]
+    for path in candidates:
         try:
             return ImageFont.truetype(path, size)
         except Exception:
             pass
-    return ImageFont.load_default()
+    try:
+        return ImageFont.load_default(size=size)
+    except Exception:
+        return ImageFont.load_default()
 
 
 def generate_certificate(details: dict = None) -> Image.Image:
